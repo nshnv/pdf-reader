@@ -125,14 +125,15 @@ export async function POST(request: NextRequest) {
   "deposit": 1,
   "property_management_jp": "Property management company in Japanese",
   "property_management_en": "Property management company in English",
-  "closest_station_jp": "Closest train station and walk time in Japanese",
-  "closest_station_en": "Closest train station and walk time in English"
+  "closest_station_jp": "ALL train/subway access routes in Japanese, each on a new line, e.g.:\nJR山手線 高田馬場駅 徒歩7分\n東京メトロ東西線 高田馬場駅 徒歩7分\n西武新宿線 高田馬場駅 徒歩9分",
+  "closest_station_en": "ALL train/subway access routes in English, each on a new line, e.g.:\nJR Yamanote Line - Takadanobaba Station (7 min walk)\nTokyo Metro Tozai Line - Takadanobaba Station (7 min walk)\nSeibu Shinjuku Line - Takadanobaba Station (9 min walk)"
 }
 
 Notes:
 - rent should be a number in JPY (monthly)
 - size should be a number in square meters
 - key_money and deposit should be numbers representing months (e.g., 1 = one month)
+- For closest_station fields, include ALL access routes listed in the PDF, not just the closest one. Each route should be on its own line with line name, station name, and walk time.
 - If a field is not found in the document, use null
 - Return ONLY the JSON object, no other text`,
             },
