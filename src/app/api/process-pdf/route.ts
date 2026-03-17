@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch the record from Airtable
     const record = await getAirtableRecord(recordId);
+    const roomNumber = record.fields?.["Room number"] || null;
     const attachments = record.fields?.PDF;
 
     if (!attachments || attachments.length === 0) {
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
             },
             {
               type: "text",
-              text: `Please transcribe the contents of this PDF document into English and extract the following specific information. Return your response as a JSON object with exactly these keys:
+              text: `Please transcribe the contents of this PDF document into English and extract the following specific information.${roomNumber ? ` This PDF may contain multiple room listings — extract data ONLY for room number ${roomNumber}.` : ""} Return your response as a JSON object with exactly these keys:
 
 {
   "property_name_jp": "Property name in Japanese",
