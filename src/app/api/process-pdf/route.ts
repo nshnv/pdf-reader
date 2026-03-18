@@ -71,14 +71,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find the first PDF attachment
-    const pdfAttachment = attachments.find(
-      (a: { type: string }) => a.type === "application/pdf"
+    const SUPPORTED_TYPES = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+
+    // Find the first supported attachment
+    const attachment = attachments.find((a: { type: string }) =>
+      SUPPORTED_TYPES.includes(a.type)
     );
-    if (!pdfAttachment) {
+    if (!attachment) {
       await updateAirtableRecord(recordId, { Status: "Error" });
       return NextResponse.json(
-        { error: "No PDF attachment found" },
+        { error: "No supported attachment found (PDF or image required)" },
         { status: 400 }
       );
     }
@@ -86,10 +94,11 @@ export async function POST(request: NextRequest) {
     // Mark as processing
     await updateAirtableRecord(recordId, { Status: "Processing" });
 
-    // Download the PDF
-    const pdfResponse = await fetch(pdfAttachment.url);
-    const pdfBuffer = await pdfResponse.arrayBuffer();
-    const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
+    // Download the file
+    const fileResponse = await fetch(attachment.url);
+    const fileBuffer = await fileResponse.arrayBuffer();
+    const fileBase64 = Buffer.from(fileBuffer).toString("base64");
+    const isPdf = attachment.type === "application/pdf";
 
     // Send to Claude for extraction
     const message = await anthropic.messages.create({
@@ -99,14 +108,27 @@ export async function POST(request: NextRequest) {
         {
           role: "user",
           content: [
-            {
-              type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: pdfBase64,
-              },
-            },
+            isPdf
+              ? {
+                  type: "document",
+                  source: {
+                    type: "base64",
+                    media_type: "application/pdf",
+                    data: fileBase64,
+                  },
+                }
+              : {
+                  type: "image",
+                  source: {
+                    type: "base64",
+                    media_type: attachment.type as
+                      | "image/jpeg"
+                      | "image/png"
+                      | "image/gif"
+                      | "image/webp",
+                    data: fileBase64,
+                  },
+                },
             {
               type: "text",
               text: `Please transcribe the contents of this PDF document into English and extract the following specific information.${roomNumber ? ` This PDF may contain multiple room listings — extract data ONLY for room number ${roomNumber}.` : ""} Return your response as a JSON object with exactly these keys:
